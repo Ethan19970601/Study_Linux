@@ -896,3 +896,66 @@ int main()
     
 （2).  rid == 0 : 代表的是等待是成功的，但是对方还没有退出。
 
+#### 非阻塞轮询等待：
+
+```c
+#include <stdio.h>
+#include <unistd.h>    // fork()  要用此头文件
+#include <stdlib.h>    // exit() 要用此头文件
+#include <sys/types.h> // waitpid 要用此头文件
+#include <sys/wait.h>  // waitpid 要用此头文件
+
+void Worker(int cnt)
+{
+    printf("i am child process, pid: %d, ppid: %d, cnt: %d\n", getpid(), getppid(), cnt);
+}
+
+int main()
+{
+    pid_t id = fork(); // 创建子进程
+    if (id == 0)
+    {
+        // 这里是子进程 child
+        int cnt = 5;
+        while (cnt)
+        {
+            Worker(cnt);
+            sleep(2);
+            cnt--;
+        }
+
+        exit(0);
+    }
+    else
+    {
+        while (1) // 由于我们使用的参数是：WNOHONG，非阻塞等待，所以我们的父进程要轮询
+        {
+            // 这里是父进程 father
+            int status = 0;
+            pid_t rid = waitpid(id, &status, WNOHANG);
+            if (rid > 0)
+            {
+                // 等待成功，子进程退出
+                printf("child quit scuess, exit code : %d, exit signal: %d\n", (status >> 8) & 0xFF, status & 0x7F);
+                break;
+            }
+            else if (rid == 0)
+            {
+                // 等待成功但是子进程还没有退出，父进程可以去完成其他的事
+                printf("child is alive, wait again, father do other thing....\n");
+            }
+            else if (rid < 0)
+            {
+                // 等待失败，不知道子进程啥状态
+                printf("wait failed!\n");
+                break;
+            }
+            sleep(1);
+        }
+    }
+    return 0;
+}
+```
+
+
+
