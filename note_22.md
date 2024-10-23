@@ -120,7 +120,7 @@ int main()
 ![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/b22a3ec3b4d34703b5c4a81528531b43.png)
 
 
-**向这个文件中📃写入内容** 
+**向这个文件中写入内容** 
 
 ```c    // 向这个文件中写入内容
     const char *msg = "hello linux file\n";
@@ -139,19 +139,162 @@ int main()
 int fputs(const char *str, FILE *stream);
 ```
 
+**整体代码**
+```c
+// myfile.c
+
+#include <stdio.h>
+
+int main()
+{
+    // "w": 按照写的方式来打开文件，如果文件不存在就创建
+    FILE *fd = fopen("log.txt", "w");
+    if (fd == NULL)
+    {
+        perror("fopen");
+        return 1;
+    }
+
+        // 向这个文件中写入内容
+        const char *msg = "hello linux file\n";
+        int cnt = 10;
+        while(cnt)
+        {
+            fputs(msg, fd);
+            cnt--;
+        }
+    
+    fclose(fd);
+    return 0;
+}
+```
+
+运行上面的代码之后我们可以放心 log.txt 中已经被写入了内容。
 
 
+> 注意：以 "w" 的方式打开这个文件，会覆盖掉这个文件之前的内容。只要你以"w"的方式打开了，无论你做没做修改，之前的文件的内容都会被清空。
+> 我们如果要清空一个文件的内容，可以使用命令：`> 文件名` ， 比如：`> log.txt` 。`>` 是重定向，这里由于没有任何的前置操作，所以会被我们的 shell 解释成： 首先我们要重定向，就要先把这个文件给打开，但是由于没有前置的命名，所以最后又关闭这个文件，但是默认是以写的方式来打开这个文件的，所以这个文件的内容被清空了。
 
+**除了 “w”的方式来写入，我们还可以使用“a”方式来写入，代码如下：
 
+```c
+#include <stdio.h>
 
+int main()
+{
+    // "w": 按照写的方式来打开文件，如果文件不存在就创建
+    FILE *fd = fopen("log.txt", "a"); /////////////////////// 这里 a 方式
+    if (fd == NULL)
+    {
+        perror("fopen");
+        return 1;
+    }
+
+        // 向这个文件中写入内容
+    const char *msg = "message text";
+    fputs(msg,fd);
+    fclose(fd);
+    return 0;
+}
+```
+
+`a` 方式也是写入，和 `w` 方式的区别是：`a` 方式不会删除之前的内容，它是从文件的结尾处开始写入，即：==追加，不清空==
+
+> 我们上面说的 `>` :是输出重定向，使用 `> log.txt` 会删除这个`log.txt` 之前的内容，我们也可以使用 `>>` :这个是追加重定向，使用`>> log.txtt` 不会删除`log.txt` 之前的内容而是追加
+> 
 
 
 
 # 🏷️ 认识系统接口，操作文件
 
+ 一个进程是通过操作系统来打开文件的，所以操作系统一定会提供相应的系统调用接口，我们学习的 c语言的文件相关的函数`fopen`,`fclose` 之类的。底层一定是封装了系统的调用接口的 
 
+## 📌 认识系统调用接口：open
 
+在Linux系统中，`open` 系统调用用于打开或创建一个文件，并返回一个文件描述符，该文件描述符用于后续的文件操作。以下是对 `open` 系统调用的详细解释：
 
+### 头文件
+
+要使用 `open` 系统调用，你需要包含以下头文件：
+
+```c
+#include <fcntl.h>
+```
+
+`fcntl.h` 头文件包含了文件控制选项，包括 `open` 系统调用的定义。
+
+### 函数原型
+
+`open` 系统调用的函数原型如下：
+
+```c
+int open(const char *pathname, int flags);
+```
+
+在Linux中，`open` 系统调用还有一个额外的参数 `mode`，用于设置新创建文件的权限：
+
+```c
+int open(const char *pathname, int flags, mode_t mode);
+```
+
+### 返回值
+
+- 如果 `open` 系统调用成功，它将返回一个非负的文件描述符（它返回的那个 int 类型的数，我们称之为文件描述符）。
+- 如果调用失败，它将返回 `-1`，并设置全局变量 `errno` 以指示错误原因。
+
+### 参数
+
+1. `pathname`：一个指向文件名的指针。这个文件名可以是相对路径或绝对路径。
+
+2. `flags`：一个标志位，用于指定文件打开的方式。常见的标志位包括：
+   - `O_RDONLY`：以只读方式打开文件。(read only 缩写)
+   - `O_WRONLY`：以只写方式打开文件。(write only)
+   - `O_RDWR`：以读写方式打开文件。(read  and write)
+   - `O_CREAT`：如果文件不存在，则创建一个新文件。（ creat ）
+   - `O_TRUNC`：如果文件已存在且成功打开，则将文件长度截断为0。
+   - `O_APPEND`：如果文件已存在，写入操作会在文件末尾追加数据。(appear end)
+   - `O_EXCL`：与 `O_CREAT` 一起使用，如果文件已存在，则 `open` 调用失败。
+
+3. `mode`（可选）：当创建新文件时，`mode` 参数指定了文件的权限模式。如果不需要创建新文件，这个参数通常被设置为0。`mode_t` 是一个数据类型，用于表示文件的权限模式。
+
+### 用法
+
+以下是使用 `open` 系统调用打开文件的示例：
+
+```c
+#include <fcntl.h>    // 包含 open 函数
+#include <unistd.h>   // 包含 close 函数
+#include <stdio.h>    // 包含 perror 和 printf 函数
+#include <errno.h>    // 包含 errno 变量
+
+int main() {
+    int fd;
+    // 打开文件，O_CREAT | O_WRONLY | O_TRUNC 表示创建文件，写入模式，截断文件
+    fd = open("example.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd == -1) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // 进行文件操作，如写入数据
+    // ...
+
+    // 关闭文件
+    if (close(fd) == -1) {
+        perror("Error closing file");
+        return 1;
+    }
+
+    return 0;
+}
+```
+
+在这个示例中：
+
+1. 使用 `open` 以写入模式打开（或创建）名为 `example.txt` 的文件。如果文件不存在，则创建它，并设置文件权限为 `0644`（即只有所有者可以写入）。
+2. 检查 `open` 调用是否成功。如果失败，使用 `perror` 打印错误消息并返回 `1`。
+3. 如果 `open` 成功，返回的文件描述符 `fd` 用于后续的文件操作。
+4. 使用 `close` 系统调用关闭文件，并检查是否成功关闭。
 
 
 
