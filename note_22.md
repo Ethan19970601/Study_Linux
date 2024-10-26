@@ -231,6 +231,94 @@ int main()
 int open(const char *pathname, int flags);
 ```
 
+`pathname` : 是我们要打开的文件的名字
+`flags` : 是标志位
+
+在C语言中，`open` 函数是用来打开文件的系统调用，它定义在 `<fcntl.h>` 头文件中。`open` 函数的两个参数 `pathname` 和 `flags` 决定了如何打开文件。
+
+`pathname` 参数是一个指向字符数组的指针，它包含了要打开的文件的路径。这个路径可以是相对路径也可以是绝对路径。
+
+`flags` 参数是一个或多个标志位的组合，这些标志位定义了文件打开的方式。在Linux系统中，常用的标志位包括：
+- `O_RDONLY`：以只读方式打开文件。如果文件不存在，打开操作将失败。
+- `O_WRONLY`：以只写方式打开文件。如果文件不存在，会创建一个新文件。
+- `O_RDWR`：以读写方式打开文件。如果文件不存在，打开操作将失败。
+- `O_CREAT`：如果文件不存在，则创建新文件。通常与 `O_WRONLY` 或 `O_RDWR` 结合使用。
+- `O_TRUNC`：如果文件已存在且成功打开，则将其长度截断为0。
+- `O_APPEND`：设置文件的读写位置在文件末尾。通常用于写操作。
+- `O_EXCL`：与 `O_CREAT` 一起使用，如果文件已存在，则 `open` 调用失败。
+- `O_NONBLOCK`：以非阻塞方式打开文件。对于某些类型的文件（如终端设备），这可以使 `read` 和 `write` 调用立即返回而不是阻塞。
+- `O_SYNC`：打开文件进行同步I/O操作。每次 `write` 调用都会等待数据实际写入磁盘。
+
+这些标志位可以组合使用，以提供不同的文件打开选项。例如，如果你想以读写方式打开一个文件，并且如果文件不存在则创建它，你可以这样设置 `flags`：
+
+```c
+int flags = O_RDWR | O_CREAT;
+```
+
+在实际使用中，`flags` 参数的值通常是这些标志位的位或（bitwise OR）操作的结果。
+
+#### **❓ 如何理解这个标记位 flags**
+
+我们可以做一个简单的实验：
+我们创建一个 `test.c` 文件
+文件内容如下：
+```c
+#include <stdio.h>
+
+  
+
+#define Print1 1  // 0001 ------ 这是 1 的二进制表达形式
+
+#define Print2 (1<<1) // 0010  左移 1 位
+
+#define Print3 (1<<2) // 0010  左移 2 位
+
+#define Print4 (1<<3) // 1000  左移 3 位
+
+  
+
+void Print(int flags) // 这个函数的作用是用来打印我们想打印的数
+
+{
+
+  if (flags&Print1) printf("hello 1\n");
+
+  if (flags&Print2) printf("hello 2\n");
+
+  if (flags&Print3) printf("hello 3\n");
+
+  if (flags&Print4) printf("hello 4\n");
+
+}
+
+  
+
+int main()
+
+{
+
+  Print(Print1);  // 我们想打印 1  
+
+  Print(Print1|Print2); // 我们想打印 1，2,观察我们传入的参数,是 Print1 和 Print2 相或的结果作为参数：flags ,flags 被传入我们的函数 Print 之后在通过相应的 & 运算来得出我们想要的结果，我们这里就是来类比体会一下 open 函数中标志位的用法,以下同理
+
+  Print(Print1|Print2|Print3); // 我们想打印 1,2,3，注意我们这里参数的写法，这样写法就类似 open 函数里面的标志位 flags 的用法
+
+  Print(Print3|Print4); // 我们想打印 3， 4
+
+  Print(Print4);  // 我们想打印 4。
+
+  return 0;
+
+}
+```
+
+运行结果：
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/8021ea79303e49dc944c9f0edbc26a0c.png)
+
+
+
+
 在Linux中，`open` 系统调用还有一个额外的参数 `mode`，用于设置新创建文件的权限：
 
 ```c
@@ -249,7 +337,7 @@ int open(const char *pathname, int flags, mode_t mode);
 2. `flags`：一个标志位，用于指定文件打开的方式。常见的标志位包括：
    - `O_RDONLY`：以只读方式打开文件。(read only 缩写)
    - `O_WRONLY`：以只写方式打开文件。(write only)
-   - `O_RDWR`：以读写方式打开文件。(read  and write)
+   - `O_RDWR`：以读写方式打开文件。(read  write)
    - `O_CREAT`：如果文件不存在，则创建一个新文件。（ creat ）
    - `O_TRUNC`：如果文件已存在且成功打开，则将文件长度截断为0。
    - `O_APPEND`：如果文件已存在，写入操作会在文件末尾追加数据。(appear end)
