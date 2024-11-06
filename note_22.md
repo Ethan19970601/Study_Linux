@@ -483,6 +483,12 @@ int main()
 
 运行上面的程序之后，我们打开被创建的`log.txt` 发现了有乱码：
 ![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/166ddf30c24444caa7f2ebe4e3ae461b.png)
+
+
+## 📌 了解一些标志位
+
+### ✏️ O_WRONLY
+
 > 还有一件事： O_WRONLY ，以写的方式来打开文件，但是它并不会清空原来文件里的内容，它是以覆盖的方式来写的。
 > 举个例子：
 > 如果你原来文件的内容是：aaaa
@@ -557,6 +563,100 @@ int main()
 我们来查看一下这时的结果：
 ![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/843a531d2fcc48379c65f722a8db6f8e.png)
 
+
+### ✏️ O_TRUNC
+
+好了，问题来了，如果我们想要打开这个文件的时候把这个文件里面的内容全部清空的话，我们要用的是一个新的选项---- `O_TRUNC`，他会将我们文件打开的长度清0，就是会先把文件清空，我们的代码如下：
+```c
+  int fd = open("log.txt", O_WRONLY | O_CREAT | O_TRUNC, 0666); 
+```
+
+![](https://img-blog.csdnimg.cn/img_convert/e8277b16a08864592b2aed41ac36f0d2.png)
+
+
+### ✏️ O_APPEND
+除此之外我们还有一些其他的选项，比如：`O_APPEND` ，这个选项让我们可以在文件的结尾处开始写入，类似于追加，不会清空文件
+```c
+int fd = open("log.txt", O_WRONLY | O_CREAT | O_APPEND, 0666); 
+```
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/e7730027399d40aba6ae1354ebf6603b.png)
+
+
+## 📌 文件的返回值，对打开文件的本质理解
+
+通过上面的代码我们可以知道，文件的返回值十几个整数
+
+```c
+// myfile.c
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h> // close 要用
+#include <string.h> // strlen 要用
+
+int main()
+{
+    int fd = open("log.txt", O_WRONLY | O_CREAT | O_APPEND, 0666); // O_WRONLY:只写入，O_CREAT:文件不存在就创建
+    if (fd < 0)                                                    // 如果失败的话，会返回-1
+    {
+        perror("open");
+        return 1;
+    }
+
+    printf("fd:%d\n", fd); // 我们可以把这个整数打印出来看一下
+    
+    // 操作这个文件：
+    const char *msg = "ccc\n";
+    write(fd, msg, strlen(msg));
+
+    close(fd);
+    return 0;
+}
+```
+
+运行上面的代码，打印的结果是:``fd = 3``
+
+为了更好的观察文件的返回值我们执行以下代码：
+
+```c
+// myfile.c
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h> 
+#include <string.h> 
+
+int main()
+{
+    int fda = open("loga.txt", O_WRONLY | O_CREAT | O_APPEND, 0666); 
+    int fdb = open("logb.txt", O_WRONLY | O_CREAT | O_APPEND, 0666); 
+    int fdc = open("logc.txt", O_WRONLY | O_CREAT | O_APPEND, 0666); 
+    int fdd = open("logd.txt", O_WRONLY | O_CREAT | O_APPEND, 0666); 
+    
+    printf("fda:%d\n", fda);
+    printf("fdb:%d\n", fdb);
+    printf("fdc:%d\n", fdc);
+    printf("fdd:%d\n", fdd);
+
+    return 0;
+}
+```
+
+
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/e5441c5b6b9d4c6f96d0f527d5a944b5.png)
+
+
+我们发现文件的返回值是一串连续的整数，是不是有点像数组的下标呀。
+
+### ✏️ 理解文件在操作系统中的表现
+
+一个文件要被访问必须先被打开，谁来打开这个文件呢，是进程来打开这个文件，所以我们研究文件的本质，是研究进程和文件之间的关系。
 
 
 
