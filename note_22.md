@@ -716,14 +716,11 @@ struct file 里面要包含哪些内容？
 
 ![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/69515ea3286247678d8812e2eda69bdb.png)
 
+我们如果是写数据也同样需要将文件加载到内存中。
+加载到内存这个动作是由操作系统来做的
 
-
-
-
-
-
-
-
+我们在应用层进行数据读写的本质是什么？
+答：本质是将内核缓冲区中的数据进行来回拷贝！ 
 
 
 
@@ -731,6 +728,44 @@ struct file 里面要包含哪些内容？
 
 ## 📌 fd 的分配规则
 
+我们执行以下代码：
+```c
+#include <stdio.h>
+#include <sys/types.h> // open 函数要用
+#include <sys/stat.h>  // open 函数要用
+#include <fcntl.h>     // open 函数要用
+#include <unistd.h>    // close 函数要用
+
+#define FILE_NAME "log.txt"
+
+int main()
+{
+    // O_CREAT : 文件不存在就创建 ,O_WRONLY: 以写的方式来打开文件, O_TRUNC: 清空这个文件之前的内容
+    int fd = open(FILE_NAME, O_CREAT|O_WRONLY|O_TRUNC,0666);
+    if (fd < 0)
+    {
+        perror("open");
+        return 1;
+    }
+
+    printf("fd:%d\n", fd);
+
+    // 关闭这个文件
+    close(fd);
+    return 0;
+}
+```
+
+
+打印的结果是：`fd:3` 符合我们的预期，因为0，1,   2 , 被标准输出，标准输入，标准错误给占据了，并且系统会默认给我们打开这三个文件。
+现在问题来了，既然操作系统已经提前给我们打开了键盘显示器的文件，那我们是不是可以直接使用呢？
+
+我们可以通过一个系统调用接口来实现我们的目的:`read`
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/1faf31159f754f78bf436b787af7d07d.png)
+
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/86b543eb0c574640b6bf524f4e485693.png)
 
 
 
@@ -741,7 +776,8 @@ struct file 里面要包含哪些内容？
 
 
 
-# 🏷️ 尝试理解文件，打通语言和系统关于文件的部分
+
+
 
 
 
