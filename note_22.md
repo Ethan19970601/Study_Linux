@@ -768,6 +768,85 @@ int main()
 ![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/86b543eb0c574640b6bf524f4e485693.png)
 
 
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/b3ba6d06fb40469981fd952bc56a75fb.png)
+
+
+好了，我们已经知道了 read 函数的用法，接下来的代码中会使用到 read 函数。
+```c
+#include <stdio.h>
+#include <sys/types.h> // open 函数要用
+#include <sys/stat.h>  // open 函数要用
+#include <fcntl.h>     // open 函数要用
+#include <unistd.h>    // close 函数要用
+
+#define FILE_NAME "log.txt"
+
+int main()
+{
+    char buffer[1024];
+    // 这个 buffer 就是对应的read 函数中的参数：buf。 1024是我们指定的buffer的大小
+    // 0： 表示的是我们想要从标准输入中读取数据。
+    // buffer : 然后将读取的数据存放进 buffer 中。
+    // 1024：表示我们希望从标准输入中读取 1024 个字节的数据
+    ssize_t s = read(0, buffer, 1024); 
+    // s :表示的是我们实际上读取到的字节数，ssize_t 有符号整型
+    if (s > 0) // 如果s > 0 说明读取到了数据，我们打印出来一下
+    {
+        buffer[s] = 0; // 我们把 buffer 当字符串来用，所以我们把这个数组的最后一位设为 0 ，就相当于字符串的 \0
+        printf("echo#: %s\n", buffer);
+    }
+    return 0;
+}
+```
+
+
+代码的运行结果：
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/3173ebce562743b2a13ab6fb7d0bd22b.png)
+
+
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/61ca5470b15043b99d1b092c9e27d647.png)
+
+这样的运行结果也证明了，我们确实可以直接的访问键盘相应文件的内容，既然我们可以不用 scanf 直接读取键盘输入的数据，那我们也可以不用 printf，直接向显示器中写入数据
+
+此时，我们要用的函数是 `write`， 头文件：`#include <unistd.h>`
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/808397c670a14aa589b03f9402754231.png)
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/eaaa437b68bf491f8af675d91fe77b68.png)
+
+代码如下：
+```c
+#include <stdio.h>
+#include <sys/types.h> 
+#include <sys/stat.h>  
+#include <fcntl.h>     
+#include <unistd.h>    
+#include <string.h> // strlen 要用
+
+#define FILE_NAME "log.txt"
+
+int main()
+{
+    char buffer[1024];
+    ssize_t s = read(0, buffer, 1024); 
+    if (s > 0)                        
+    {
+        buffer[s] = 0;
+        // printf("echo#: %s\n", buffer); 我们这里就不用 printf 来打印了，我们用 write
+        write(1, buffer, strlen(buffer));
+    }
+    return 0;
+}
+```
+
+
+代码运行结果：
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/8a353135cf1145f781ffc7f737a534de.png)
+
+![在这里插入图片描述](https://i-blog.csdnimg.cn/direct/cd26175c7b0443b09016c2a132f74ea5.png)
+
+
 
 
 
